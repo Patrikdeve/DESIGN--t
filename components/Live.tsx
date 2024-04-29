@@ -6,11 +6,21 @@ import { CursorMode, CursorState, Reaction, ReactionEvent } from '@/types/type';
 import ReactionSelector from './reaction/ReactionButton';
 import FlyingReaction from './reaction/FlyingReaction';
 import useInterval from '@/hooks/useInterval';
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+  } from "@/components/ui/context-menu"
+import { shortcuts } from '@/constants';
+  
 
 type Props = {
     canvasRef:React.MutableRefObject<HTMLCanvasElement | null>;
+    undo: ()=>void;
+    redo: ()=>void;
 }
-const Live = ({canvasRef}: Props) => {
+const Live = ({canvasRef, undo, redo}: Props) => {
     const others = useOthers();//This return the list of the other members in the room
 
     const [{cursor}, updateMyPresence] = useMyPresence() as any; 
@@ -164,8 +174,40 @@ useInterval(()=> {
     const setReactions = useCallback((reaction:string)=> {
             setCursorState({mode: CursorMode.Reaction, reaction, isPressed:false})
     }, [])
+
+    const handleContextMenuClick = useCallback((key:string) => {
+
+        switch(key){
+            case 'Chat':
+                setCursorState({
+                    mode:CursorMode.Chat,
+                    previousMessage:null,
+                    message:""
+
+                })
+            break; 
+        
+            case "Reactions":
+                setCursorState({
+                    mode:CursorMode.ReactionSelector
+                })
+            break; 
+
+            case "Undo":
+                undo(); 
+                break; 
+            
+            case "Redo":
+                redo(); 
+                break; 
+            
+
+        }
+    }, [])
     return (
-    <div
+
+        <ContextMenu>
+        <ContextMenuTrigger
         id='canvas'
          onPointerMove = {handlePointerMove}
          onPointerLeave = {handlePointerLeave}
@@ -207,7 +249,19 @@ useInterval(()=> {
 
 
       <LiveCursors others = {others}/>
-    </div>
+    </ContextMenuTrigger>
+    <ContextMenuContent className='right-menu-content'>
+        {shortcuts.map((item) => 
+            <ContextMenuItem key = {item.key} className='right-menu-item'
+                onClick={() => handleContextMenuClick(item.name)}
+            >
+                <p>{item.name}</p>
+                <p className='text-xs text-primary-grey-300'>{item.shortcut}</p>
+            </ContextMenuItem>
+        )}
+    </ContextMenuContent>
+    </ContextMenu>
+   
   )
 }
 
